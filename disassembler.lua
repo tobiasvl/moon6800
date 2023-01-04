@@ -1,4 +1,5 @@
-local opcodes = require "opcodes"
+local path = (...):match("(.-)[^%.]+$")
+local opcodes = require(path .. ".opcodes")
 
 local disassembler = {}
 
@@ -18,7 +19,9 @@ function disassembler:disassemble(memory)
                 s = s .. " #$" .. string.format("%02X", memory[address + 1])
                 address = address + 1
             elseif op.addr_mode == "imm16" then
-                s = s .. " #$" .. string.format("%02X", memory[address + 1]) .. string.format("%02X", memory[address + 2])
+                s =
+                    s ..
+                    " #$" .. string.format("%02X", memory[address + 1]) .. string.format("%02X", memory[address + 2])
                 address = address + 2
             elseif op.addr_mode == "dir" then
                 s = s .. " ($" .. string.format("%02X", memory[address + 1]) .. ")"
@@ -27,10 +30,16 @@ function disassembler:disassemble(memory)
                 s = s .. " ($" .. string.format("%02X", memory[address + 1]) .. ")"
                 address = address + 1
             elseif op.addr_mode == "ext" then
-                s = s .. " ($" .. string.format("%02X", memory[address + 1]) .. string.format("%02X", memory[address + 2]) .. ")"
+                s =
+                    s ..
+                    " ($" ..
+                        string.format("%02X", memory[address + 1]) .. string.format("%02X", memory[address + 2]) .. ")"
                 address = address + 2
             elseif op.addr_mode == "ext16" then
-                s = s .. " ($" .. string.format("%02X", memory[address + 1]) .. string.format("%02X", memory[address + 2]) .. ")"
+                s =
+                    s ..
+                    " ($" ..
+                        string.format("%02X", memory[address + 1]) .. string.format("%02X", memory[address + 2]) .. ")"
                 address = address + 2
             elseif op.addr_mode == "idx" or op.addr_mode == "idx16" then
                 s = s .. " ($" .. string.format("%02X", memory[address + 1]) .. "+X)"

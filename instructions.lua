@@ -1,10 +1,12 @@
-local bit = bit or require "bit32"
+local path = (...):match("(.-)[^%.]+$")
 
-local instructions = {}
+local instructions = {opcodes = require(path .. ".opcodes")}
+local bit = bit or require "bit32"
 
 -- Addressing
 function instructions.inh()
-    return function() end
+    return function()
+    end
 end
 
 function instructions:acc(acc)
@@ -50,9 +52,14 @@ function instructions:dir16()
     self.cpu.registers.pc(pc + 1)
     return function(newValue)
         if newValue then
-            self.cpu.memory[self.cpu.memory[pc]], self.cpu.memory[self.cpu.memory[pc] + 1] = bit.rshift(bit.band(newValue, 0xFFFF), 8), bit.band(newValue, 0xFF)
+            self.cpu.memory[self.cpu.memory[pc]], self.cpu.memory[self.cpu.memory[pc] + 1] =
+                bit.rshift(bit.band(newValue, 0xFFFF), 8),
+                bit.band(newValue, 0xFF)
         else
-            return bit.bor(bit.lshift(self.cpu.memory[self.cpu.memory[pc]], 8), self.cpu.memory[self.cpu.memory[pc] + 1])
+            return bit.bor(
+                bit.lshift(self.cpu.memory[self.cpu.memory[pc]], 8),
+                self.cpu.memory[self.cpu.memory[pc] + 1]
+            )
         end
     end
 end
@@ -62,7 +69,8 @@ function instructions:ext()
     self.cpu.registers.pc(pc + 2)
     return function(newValue)
         if newValue then
-            self.cpu.memory[bit.bor(bit.lshift(self.cpu.memory[pc], 8), self.cpu.memory[pc + 1])] = bit.band(newValue, 0xFF)
+            self.cpu.memory[bit.bor(bit.lshift(self.cpu.memory[pc], 8), self.cpu.memory[pc + 1])] =
+                bit.band(newValue, 0xFF)
         else
             return self.cpu.memory[bit.bor(bit.lshift(self.cpu.memory[pc], 8), self.cpu.memory[pc + 1])]
         end
@@ -74,9 +82,14 @@ function instructions:ext16()
     self.cpu.registers.pc(pc + 2)
     return function(newValue)
         if newValue then
-            self.cpu.memory[self.cpu.memory[pc]], self.cpu.memory[self.cpu.memory[pc + 1]] = bit.rshift(bit.band(newValue, 0xFFFF), 8), bit.band(newValue, 0xFF)
+            self.cpu.memory[self.cpu.memory[pc]], self.cpu.memory[self.cpu.memory[pc + 1]] =
+                bit.rshift(bit.band(newValue, 0xFFFF), 8),
+                bit.band(newValue, 0xFF)
         else
-            return bit.bor(bit.lshift(self.cpu.memory[self.cpu.memory[pc]], 8), self.cpu.memory[self.cpu.memory[pc + 1]])
+            return bit.bor(
+                bit.lshift(self.cpu.memory[self.cpu.memory[pc]], 8),
+                self.cpu.memory[self.cpu.memory[pc + 1]]
+            )
         end
     end
 end
@@ -106,9 +119,15 @@ function instructions:idx16()
     self.cpu.registers.pc(pc + 1)
     return function(newValue)
         if newValue then
-            self.cpu.memory[self.cpu.registers.ix() + self.cpu.memory[pc]], self.cpu.memory[self.cpu.registers.ix() + self.cpu.memory[pc] + 1] = bit.rshift(bit.band(newValue, 0xFFFF), 8), bit.band(newValue, 0xFF)
+            self.cpu.memory[self.cpu.registers.ix() + self.cpu.memory[pc]],
+                self.cpu.memory[self.cpu.registers.ix() + self.cpu.memory[pc] + 1] =
+                bit.rshift(bit.band(newValue, 0xFFFF), 8),
+                bit.band(newValue, 0xFF)
         else
-            return bit.bor(bit.lshift(self.cpu.memory[self.cpu.registers.ix() + self.cpu.memory[pc]], 8), self.cpu.memory[self.cpu.registers.ix() + self.cpu.memory[pc] + 1])
+            return bit.bor(
+                bit.lshift(self.cpu.memory[self.cpu.registers.ix() + self.cpu.memory[pc]], 8),
+                self.cpu.memory[self.cpu.registers.ix() + self.cpu.memory[pc] + 1]
+            )
         end
     end
 end
@@ -127,7 +146,6 @@ end
 
 function instructions:init(cpu)
     self.cpu = cpu
-    self.opcodes = require "opcodes"
 end
 
 -- NOP
@@ -324,11 +342,12 @@ function instructions:cba()
     local result = a - b
     self.cpu.registers.status.n = bit.band(result, 0x80) ~= 0
     self.cpu.registers.status.z = bit.band(result, 0xFF) == 0
-    self.cpu.registers.status.v = (bit.band(a, 0x80) ~= 0 and bit.band(b, 0x80) == 0 and bit.band(result, 0x80) == 0) or
-                                  (bit.band(a, 0x80) == 0 and bit.band(b, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0)
-    self.cpu.registers.status.c = (bit.band(a, 0x80) == 0 and bit.band(b, 0x80) ~= 0) or
-                                  (bit.band(b, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0) or
-                                  (bit.band(result, 0x80) ~= 0 and bit.band(a, 0x80) == 0)
+    self.cpu.registers.status.v =
+        (bit.band(a, 0x80) ~= 0 and bit.band(b, 0x80) == 0 and bit.band(result, 0x80) == 0) or
+        (bit.band(a, 0x80) == 0 and bit.band(b, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0)
+    self.cpu.registers.status.c =
+        (bit.band(a, 0x80) == 0 and bit.band(b, 0x80) ~= 0) or (bit.band(b, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0) or
+        (bit.band(result, 0x80) ~= 0 and bit.band(a, 0x80) == 0)
 end
 
 -- CLC
@@ -362,11 +381,12 @@ function instructions:cmp(addr_mode, acc)
     local result = x - m
     self.cpu.registers.status.n = bit.band(result, 0x80) ~= 0
     self.cpu.registers.status.z = bit.band(result, 0xFF) == 0
-    self.cpu.registers.status.v = (bit.band(x, 0x80) ~= 0 and bit.band(m, 0x80) == 0 and bit.band(result, 0x80) == 0) or
-                                  (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0)
-    self.cpu.registers.status.c = (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0) or
-                                  (bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0) or
-                                  (bit.band(result, 0x80) ~= 0 and bit.band(x, 0x80) == 0)
+    self.cpu.registers.status.v =
+        (bit.band(x, 0x80) ~= 0 and bit.band(m, 0x80) == 0 and bit.band(result, 0x80) == 0) or
+        (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0)
+    self.cpu.registers.status.c =
+        (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0) or (bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0) or
+        (bit.band(result, 0x80) ~= 0 and bit.band(x, 0x80) == 0)
 end
 
 -- COM
@@ -386,8 +406,9 @@ function instructions:cpx(addr_mode)
     local result = self.cpu.registers.ix() - addr_mode()
     self.cpu.registers.status.n = bit.band(result, 0x8000) ~= 0
     self.cpu.registers.status.z = bit.band(result, 0xFFFF) == 0
-    self.cpu.registers.status.v = (bit.band(x, 0x8000) ~= 0 and bit.band(m, 0x8000) == 0 and bit.band(result, 0x8000) == 0) or
-                                  (bit.band(x, 0x8000) == 0 and bit.band(m, 0x8000) ~= 0 and bit.band(result, 0x8000) ~= 0)
+    self.cpu.registers.status.v =
+        (bit.band(x, 0x8000) ~= 0 and bit.band(m, 0x8000) == 0 and bit.band(result, 0x8000) == 0) or
+        (bit.band(x, 0x8000) == 0 and bit.band(m, 0x8000) ~= 0 and bit.band(result, 0x8000) ~= 0)
 end
 
 -- DAA
@@ -558,7 +579,12 @@ end
 
 -- RTS
 function instructions:rts()
-    self.cpu.registers.pc(bit.bor(bit.lshift(self.cpu.memory[self.cpu.registers.sp() + 1], 8), self.cpu.memory[self.cpu.registers.sp() + 2]))
+    self.cpu.registers.pc(
+        bit.bor(
+            bit.lshift(self.cpu.memory[self.cpu.registers.sp() + 1], 8),
+            self.cpu.memory[self.cpu.registers.sp() + 2]
+        )
+    )
     self.cpu.registers.sp(self.cpu.registers.sp() + 2)
 end
 
@@ -569,11 +595,12 @@ function instructions:sba()
     local result = a - b
     self.cpu.registers.status.n = bit.band(result, 0x80) ~= 0
     self.cpu.registers.status.z = bit.band(result, 0xFF) == 0
-    self.cpu.registers.status.v = (bit.band(a, 0x80) ~= 0 and bit.band(b, 0x80) == 0 and bit.band(result, 0x80) == 0) or
-                                  (bit.band(a, 0x80) == 0 and bit.band(b, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0)
-    self.cpu.registers.status.c = (bit.band(a, 0x80) == 0 and bit.band(b, 0x80) ~= 0) or
-                                  (bit.band(b, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0) or
-                                  (bit.band(result, 0x80) ~= 0 and bit.band(a, 0x80) == 0)
+    self.cpu.registers.status.v =
+        (bit.band(a, 0x80) ~= 0 and bit.band(b, 0x80) == 0 and bit.band(result, 0x80) == 0) or
+        (bit.band(a, 0x80) == 0 and bit.band(b, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0)
+    self.cpu.registers.status.c =
+        (bit.band(a, 0x80) == 0 and bit.band(b, 0x80) ~= 0) or (bit.band(b, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0) or
+        (bit.band(result, 0x80) ~= 0 and bit.band(a, 0x80) == 0)
     self.cpu.registers.a(result)
 end
 
@@ -584,11 +611,12 @@ function instructions:sbc(addr_mode, acc)
     local result = x - m - (self.cpu.registers.status.c and 1 or 0)
     self.cpu.registers.status.n = bit.band(result, 0x80) ~= 0
     self.cpu.registers.status.z = bit.band(result, 0xFF) == 0
-    self.cpu.registers.status.v = (bit.band(x, 0x80) ~= 0 and bit.band(m, 0x80) == 0 and bit.band(result, 0x80) == 0) or
-                                  (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0)
-    self.cpu.registers.status.c = (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0) or
-                                  (bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0) or
-                                  (bit.band(result, 0x80) ~= 0 and bit.band(x, 0x80) == 0)
+    self.cpu.registers.status.v =
+        (bit.band(x, 0x80) ~= 0 and bit.band(m, 0x80) == 0 and bit.band(result, 0x80) == 0) or
+        (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0)
+    self.cpu.registers.status.c =
+        (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0) or (bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0) or
+        (bit.band(result, 0x80) ~= 0 and bit.band(x, 0x80) == 0)
     self.cpu.registers[acc](result)
 end
 
@@ -641,11 +669,12 @@ function instructions:sub(addr_mode, acc)
     local result = x - m
     self.cpu.registers.status.n = bit.band(result, 0x80) ~= 0
     self.cpu.registers.status.z = bit.band(result, 0xFF) == 0
-    self.cpu.registers.status.v = (bit.band(x, 0x80) ~= 0 and bit.band(m, 0x80) == 0 and bit.band(result, 0x80) == 0) or
-                                  (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0)
-    self.cpu.registers.status.c = (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0) or
-                                  (bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0) or
-                                  (bit.band(result, 0x80) ~= 0 and bit.band(x, 0x80) == 0)
+    self.cpu.registers.status.v =
+        (bit.band(x, 0x80) ~= 0 and bit.band(m, 0x80) == 0 and bit.band(result, 0x80) == 0) or
+        (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0)
+    self.cpu.registers.status.c =
+        (bit.band(x, 0x80) == 0 and bit.band(m, 0x80) ~= 0) or (bit.band(m, 0x80) ~= 0 and bit.band(result, 0x80) ~= 0) or
+        (bit.band(result, 0x80) ~= 0 and bit.band(x, 0x80) == 0)
     self.cpu.registers[acc](result)
 end
 

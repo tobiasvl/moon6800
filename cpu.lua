@@ -1,46 +1,55 @@
-local bit = bit or require 'bit32'
-local instructions = require 'instructions'
+local path = (...):match("(.-)[^%.]+$")
+
+local bit = bit or require "bit32"
+local instructions = require(path .. ".instructions")
 
 local function register(mask)
-    return setmetatable({
-        value = 0,
-        prev_value = 0,
-        prev_inst = 0,
-        mask = mask or 0xFF
-    }, {
-        __call = function(self, newValue)
-            if newValue then
-                self.prev_value = self.value
-                self.prev_inst = num_instructions
-                self.value = bit.band(newValue, self.mask)
-            else
-                return self.value
+    return setmetatable(
+        {
+            value = 0,
+            prev_value = 0,
+            prev_inst = 0,
+            mask = mask or 0xFF
+        },
+        {
+            __call = function(self, newValue)
+                if newValue then
+                    self.prev_value = self.value
+                    self.prev_inst = num_instructions
+                    self.value = bit.band(newValue, self.mask)
+                else
+                    return self.value
+                end
+            end,
+            __tostring = function(self)
+                return string.format(mask == 0xFF and "%02X" or "%04X", self.value)
             end
-        end,
-        __tostring = function(self)
-            return string.format(mask == 0xFF and "%02X" or "%04X", self.value)
-        end
-    })
+        }
+    )
 end
 
-local status = setmetatable({
-    i = true -- TODO ??
-}, {
-    __call = function(self, newValue)
-        if newValue then
-            for _, cc in ipairs({"c", "v", "z", "n", "i", "h"}) do
-                self[cc] = bit.band(newValue, 1) == 1
-                newValue = bit.rshift(newValue, 1)
+local status =
+    setmetatable(
+    {
+        i = true -- TODO ??
+    },
+    {
+        __call = function(self, newValue)
+            if newValue then
+                for _, cc in ipairs({"c", "v", "z", "n", "i", "h"}) do
+                    self[cc] = bit.band(newValue, 1) == 1
+                    newValue = bit.rshift(newValue, 1)
+                end
+            else
+                local statuses = 0
+                for _, cc in ipairs({"h", "i", "n", "z", "v", "c"}) do
+                    statuses = bit.bor(bit.lshift(statuses, 1), self[cc] and 1 or 0)
+                end
+                return bit.bor(statuses, 0xC0)
             end
-        else
-            local statuses = 0
-            for _, cc in ipairs({"h", "i", "n", "z", "v", "c"}) do
-                statuses = bit.bor(bit.lshift(statuses, 1), self[cc] and 1 or 0)
-            end
-            return bit.bor(statuses, 0xC0)
         end
-    end
-})
+    }
+)
 
 local CPU = {
     registers = {
@@ -85,8 +94,12 @@ function CPU:restoreFromStack()
     self.registers.status(self.memory[self.registers.sp() + 1])
     self.registers.b(self.memory[self.registers.sp() + 2])
     self.registers.a(self.memory[self.registers.sp() + 3])
-    self.registers.ix(bit.bor(bit.lshift(self.memory[self.registers.sp() + 4], 8), self.memory[self.registers.sp() + 5]))
-    self.registers.pc(bit.bor(bit.lshift(self.memory[self.registers.sp() + 6], 8), self.memory[self.registers.sp() + 7]))
+    self.registers.ix(
+        bit.bor(bit.lshift(self.memory[self.registers.sp() + 4], 8), self.memory[self.registers.sp() + 5])
+    )
+    self.registers.pc(
+        bit.bor(bit.lshift(self.memory[self.registers.sp() + 6], 8), self.memory[self.registers.sp() + 7])
+    )
     self.registers.sp(self.registers.sp() + 7)
 end
 
